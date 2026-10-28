@@ -1,0 +1,63 @@
+{
+  "observed_at_utc": "2026-10-28T23:19:36.819341Z",
+  "url": "https://data.trade.gov/downloadable_consolidated_screening_list/v1/consolidated.json",
+  "http_status": 206,
+  "request_range": "bytes=0-0",
+  "headers": [
+    [
+      "Date",
+      "Wed, 28 Oct 2026 23:19:36 GMT"
+    ],
+    [
+      "Content-Type",
+      "application/json"
+    ],
+    [
+      "Content-Length",
+      "1"
+    ],
+    [
+      "Connection",
+      "keep-alive"
+    ],
+    [
+      "Cache-Control",
+      "no-store, must-revalidate, no-cache"
+    ],
+    [
+      "Pragma",
+      "no-cache"
+    ],
+    [
+      "Expires",
+      "Wed, 28 Oct 2026 23:19:36 GMT"
+    ],
+    [
+      "Last-Modified",
+      "Wed, 28 Oct 2026 23:15:04 GMT"
+    ],
+    [
+      "ETag",
+      "0x8DF35494CDEC01D"
+    ],
+    [
+      "Request-Context",
+      "appId=cid-v1:990f3355-773d-41d5-8b5d-c5d535953ba7"
+    ],
+    [
+      "x-azure-ref",
+      "20261028T231936Z-17584f8694cfdxfxhC1CO1cwdg0000000f3g0000000075sn"
+    ],
+    [
+      "X-Cache",
+      "CONFIG_NOCACHE"
+    ],
+    [
+      "Content-Range",
+      "bytes 0-0/33934831"
+    ]
+  ],
+  "etag": "0x8DF35494CDEC01D",
+  "last_modified": "Wed, 28 Oct 2026 23:15:04 GMT",
+  "purpose": "Observe source refresh metadata and maintain an active monitored preservation repository before the January capture."
+}
