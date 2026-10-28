@@ -19,3 +19,11 @@ Official operational references:
 - https://docs.github.com/en/actions/concepts/billing-and-usage
 
 Manual test: run the **Preserve public CSL source** workflow with mode `test`.
+
+After the final January verification, disable the schedule with:
+
+```sh
+gh workflow disable csl-preserve.yml --repo MarcosO7/mantic-public-source-archive
+```
+
+After 1/19/2027 the weekly observation code is a no-op, although GitHub may still start that no-op workflow until it is disabled or suspended for inactivity. Publication and public-byte verification are synchronous, so the 30-second polling cadence and precise checkpoints are best effort. A failed upload or completeness check can terminate one job; the overlapping cloud triggers and separately registered local backup are retained for that reason.
