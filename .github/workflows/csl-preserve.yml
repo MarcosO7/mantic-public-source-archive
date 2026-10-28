@@ -37,8 +37,10 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add observations/latest_headers.json
-          git commit -m 'Record public CSL source refresh headers'
-          git push origin main
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record public CSL source refresh headers'
+            git push origin main
+          fi
   capture:
     if: github.event.schedule != '37 15 * * 0' && !(github.event_name == 'workflow_dispatch' && inputs.mode == 'metadata')
     runs-on: ubuntu-24.04

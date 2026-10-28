@@ -15,7 +15,7 @@ UTC = timezone.utc
 CUTOFF = datetime(2027, 1, 15, 12, 0, tzinfo=UTC)
 
 
-def publish_capture(mode, suffix):
+def publish_capture(mode, suffix, poll_history=None):
     stamp = csl.now().strftime("%Y%m%dT%H%M%SZ")
     run_id = os.environ.get("GITHUB_RUN_ID", "local")
     run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
@@ -23,6 +23,8 @@ def publish_capture(mode, suffix):
     root = Path("output") / f"{mode}_{stamp}_{run_id}_{run_attempt}_{suffix}"
     root.mkdir(parents=True, exist_ok=False)
     receipt = csl.capture_source(root, {"cutoff_utc": csl.iso(CUTOFF)}, mode)
+    if poll_history:
+        csl.write_json(root / "source_version_poll_history.json", poll_history)
     csl.write_json(root / "cloud_run.json", {
         "mode": mode, "github_repository": os.environ.get("GITHUB_REPOSITORY"),
         "github_run_id": run_id, "github_run_attempt": run_attempt,
@@ -80,17 +82,29 @@ def publish_capture(mode, suffix):
     # Fail the run after preserving failure evidence rather than silently accept.
     if not receipt["capture_valid"]:
         raise RuntimeError("Official response did not pass completeness checks")
-    return tag
+    return receipt
+
+
+def read_source_metadata():
+    # The official server can return 404 to HEAD while GET succeeds. A one-byte
+    # range request observes original version headers without full downloads.
+    with requests.get(csl.SOURCE, headers={"Cache-Control": "no-cache", "Accept-Encoding": "identity", "Range": "bytes=0-0"}, stream=True, timeout=20) as response:
+        response.raise_for_status()
+        record = {"observed_at_utc": csl.iso(csl.now()), "url": csl.SOURCE,
+                  "http_status": response.status_code, "request_range": "bytes=0-0",
+                  "headers": list(response.headers.items()),
+                  "etag": response.headers.get("ETag"), "last_modified": response.headers.get("Last-Modified")}
+    return record
 
 
 def observe_metadata():
-    response = requests.head(csl.SOURCE, headers={"Cache-Control": "no-cache", "Accept-Encoding": "identity"}, timeout=60)
-    response.raise_for_status()
+    if csl.now().date() > datetime(2027, 1, 19, tzinfo=UTC).date():
+        print("The requested preservation period is complete; no further observation committed.")
+        return
+    record = read_source_metadata()
     directory = Path("observations")
     directory.mkdir(exist_ok=True)
-    record = {"observed_at_utc": csl.iso(csl.now()), "url": csl.SOURCE,
-              "http_status": response.status_code, "headers": list(response.headers.items()),
-              "purpose": "Observe source refresh metadata and maintain an active monitored preservation repository before the January capture."}
+    record["purpose"] = "Observe source refresh metadata and maintain an active monitored preservation repository before the January capture."
     (directory / "latest_headers.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
 
 
@@ -110,20 +124,40 @@ def main():
         return
     if current.hour > 12 or (current.hour == 12 and current.minute > 20):
         raise RuntimeError("Production collection started too late to support the planned cutoff protocol")
-    # Multiple independent scheduled jobs overlap as a backup against late cron.
-    # Each saves an immediate capture, then before/after observations when time permits.
-    publish_capture("production", "start")
-    checkpoints = [(11, 55), (11, 59), (12, 1), (12, 7)]
-    for hour, minute in checkpoints:
-        target = CUTOFF.replace(hour=hour, minute=minute)
-        delay = (target - csl.now()).total_seconds()
-        if delay < 0:
-            continue
-        if delay > 75 * 60:
-            raise RuntimeError("Unexpected excessive wait requested")
-        while (remaining := (target - csl.now()).total_seconds()) > 0:
-            time.sleep(min(remaining, 45))
-        publish_capture("production", f"{hour:02}{minute:02}Z")
+    # Overlapping independent jobs and 30-second original-header observations
+    # reduce the chance of missing a version between two isolated snapshots.
+    history = []
+    last = publish_capture("production", "start")
+    checkpoints = [CUTOFF.replace(hour=11, minute=55),
+                   CUTOFF.replace(hour=11, minute=59, second=50),
+                   CUTOFF.replace(second=5),
+                   CUTOFF.replace(minute=1), CUTOFF.replace(minute=7)]
+    pending = [value for value in checkpoints if value > csl.now()]
+    finish = CUTOFF.replace(minute=8)
+    sequence = 0
+    while csl.now() < finish:
+        try:
+            observed = read_source_metadata()
+            history.append(observed)
+            print(json.dumps(observed), flush=True)
+            changed = observed.get("etag") != last.get("etag") or observed.get("last_modified") != last.get("last_modified")
+            due = bool(pending and pending[0] <= csl.now())
+            if changed or due:
+                sequence += 1
+                last = publish_capture("production", f"poll{sequence:03}", history)
+                while pending and pending[0] <= csl.now():
+                    pending.pop(0)
+        except requests.RequestException as exc:
+            record = {"observed_at_utc": csl.iso(csl.now()), "error": str(exc)}
+            history.append(record)
+            print(json.dumps(record), flush=True)
+        remaining = (finish - csl.now()).total_seconds()
+        if remaining <= 0:
+            break
+        delay = min(30, remaining)
+        if pending:
+            delay = min(delay, max(0.1, (pending[0] - csl.now()).total_seconds()))
+        time.sleep(delay)
 
 
 if __name__ == "__main__":
