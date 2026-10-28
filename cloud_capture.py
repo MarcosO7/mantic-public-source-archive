@@ -144,8 +144,9 @@ def main():
             due = bool(pending and pending[0] <= csl.now())
             if changed or due:
                 sequence += 1
+                capture_started = csl.now()
                 last = publish_capture("production", f"poll{sequence:03}", history)
-                while pending and pending[0] <= csl.now():
+                while pending and pending[0] <= capture_started:
                     pending.pop(0)
         except requests.RequestException as exc:
             record = {"observed_at_utc": csl.iso(csl.now()), "error": str(exc)}
