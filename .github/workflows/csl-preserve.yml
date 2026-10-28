@@ -1,0 +1,60 @@
+name: Preserve public CSL source
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Current test, weekly metadata, or guarded 1/15/2027 collection
+        required: true
+        default: test
+        type: choice
+        options: [test, metadata, production]
+  schedule:
+    - cron: '37 15 * * 0'
+    - cron: '17,47 11 15 1 *'
+    - cron: '7 12 15 1 *'
+permissions:
+  contents: write
+jobs:
+  observe:
+    if: github.event.schedule == '37 15 * * 0' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'metadata')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Get this public collector
+        run: git clone --depth 1 "https://github.com/${GITHUB_REPOSITORY}.git" collector
+      - name: Observe public source refresh metadata
+        working-directory: collector
+        run: |
+          python3 -m venv /tmp/csl-env
+          /tmp/csl-env/bin/pip install -r requirements.txt
+          /tmp/csl-env/bin/python cloud_capture.py metadata
+      - name: Preserve the meaningful weekly metadata observation
+        working-directory: collector
+        run: |
+          gh auth setup-git
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add observations/latest_headers.json
+          git commit -m 'Record public CSL source refresh headers'
+          git push origin main
+  capture:
+    if: github.event.schedule != '37 15 * * 0' && !(github.event_name == 'workflow_dispatch' && inputs.mode == 'metadata')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REQUESTED_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'production' }}
+    steps:
+      - name: Get this public collector
+        run: git clone --depth 1 "https://github.com/${GITHUB_REPOSITORY}.git" collector
+      - name: Validate collector
+        working-directory: collector
+        run: |
+          python3 -m venv /tmp/csl-env
+          /tmp/csl-env/bin/pip install -r requirements.txt
+          /tmp/csl-env/bin/python -m unittest -q test_capture_csl.py
+      - name: Capture complete original bytes and publish evidence as public release assets
+        working-directory: collector
+        run: /tmp/csl-env/bin/python cloud_capture.py "$REQUESTED_MODE"
