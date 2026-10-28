@@ -56,7 +56,7 @@ jobs:
         run: |
           python3 -m venv /tmp/csl-env
           /tmp/csl-env/bin/pip install -r requirements.txt
-          /tmp/csl-env/bin/python -m unittest -q test_capture_csl.py
+          /tmp/csl-env/bin/python -m unittest -q test_capture_csl.py test_cloud_capture.py
       - name: Capture complete original bytes and publish evidence as public release assets
         working-directory: collector
         run: /tmp/csl-env/bin/python cloud_capture.py "$REQUESTED_MODE"
