@@ -1,12 +1,12 @@
 {
-  "observed_at_utc": "2026-10-28T23:19:36.819341Z",
+  "observed_at_utc": "2026-11-01T19:52:44.200197Z",
   "url": "https://data.trade.gov/downloadable_consolidated_screening_list/v1/consolidated.json",
   "http_status": 206,
   "request_range": "bytes=0-0",
   "headers": [
     [
       "Date",
-      "Wed, 28 Oct 2026 23:19:36 GMT"
+      "Sun, 01 Nov 2026 19:52:44 GMT"
     ],
     [
       "Content-Type",
@@ -30,15 +30,15 @@
     ],
     [
       "Expires",
-      "Wed, 28 Oct 2026 23:19:36 GMT"
+      "Sun, 01 Nov 2026 19:52:44 GMT"
     ],
     [
       "Last-Modified",
-      "Wed, 28 Oct 2026 23:15:04 GMT"
+      "Sun, 01 Nov 2026 19:15:05 GMT"
     ],
     [
       "ETag",
-      "0x8DF35494CDEC01D"
+      "0x8DF384C6FB98BFA"
     ],
     [
       "Request-Context",
@@ -46,7 +46,7 @@
     ],
     [
       "x-azure-ref",
-      "20261028T231936Z-17584f8694cfdxfxhC1CO1cwdg0000000f3g0000000075sn"
+      "20261101T195244Z-16795d885bc6jqcvhC1YMQff48000000097000000000ae09"
     ],
     [
       "X-Cache",
@@ -57,7 +57,7 @@
       "bytes 0-0/33934831"
     ]
   ],
-  "etag": "0x8DF35494CDEC01D",
-  "last_modified": "Wed, 28 Oct 2026 23:15:04 GMT",
+  "etag": "0x8DF384C6FB98BFA",
+  "last_modified": "Sun, 01 Nov 2026 19:15:05 GMT",
   "purpose": "Observe source refresh metadata and maintain an active monitored preservation repository before the January capture."
 }
